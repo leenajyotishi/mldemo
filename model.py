@@ -3,36 +3,64 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import pickle
+# Import Libraries
 
-dataset = pd.read_csv('hiring.csv')
+import seaborn as sns
+import datetime as dt
+from fbprophet import Prophet
+# Statsmodels widely known for forecasting than Prophet
+import statsmodels.api as sm
+from scipy import stats
+from plotly import tools
+import plotly.figure_factory as ff
+import plotly.tools as tls
+import plotly.graph_objs as go
+from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
+init_notebook_mode(connected=True)
+import warnings
+warnings.filterwarnings("ignore")
 
-dataset['experience'].fillna(0, inplace=True)
+# plt.style.available
+plt.style.use("seaborn-whitegrid")
 
-dataset['test_score'].fillna(dataset['test_score'].mean(), inplace=True)
+data1 = {'Product':['P1', 'P2'],'2017-01-01':['12','92'],'2017-02-01':['13','99'],'2017-03-01':['15','98'],
+       '2017-04-01':['12','95']}
+df1 = pd.DataFrame(data1)
 
-X = dataset.iloc[:, :3]
-
+gapminder_tidy = df1.melt(id_vars=["Product"], 
+                              var_name="year", 
+                              value_name="Amount")
+gapminder_tidy.head(n=15)
 #Converting words to integer values
-def convert_to_int(word):
-    word_dict = {'one':1, 'two':2, 'three':3, 'four':4, 'five':5, 'six':6, 'seven':7, 'eight':8,
-                'nine':9, 'ten':10, 'eleven':11, 'twelve':12, 'zero':0, 0: 0}
-    return word_dict[word]
+df = gapminder_tidy.rename(columns={'year': 'ds', 'Amount':'y'})
 
-X['experience'] = X['experience'].apply(lambda x : convert_to_int(x))
+from fbprophet import Prophet
+grouped = df.groupby('Product')
+for g in grouped.groups:
+    group = grouped.get_group(g)
+    m = Prophet()
+    m.fit(group)
+    future = m.make_future_dataframe(periods=360)
+    forecast = m.predict(future)
+    print(forecast.tail())
+    
+final = pd.DataFrame()
+for g in grouped.groups:
+    group = grouped.get_group(g)
+    m = Prophet()
+    m.fit(group)
+    future = m.make_future_dataframe(periods=12, freq='M')
+    forecast = m.predict(future)    
+    forecast = forecast.rename(columns={'yhat': g})
+    final = pd.merge(final, forecast.set_index('ds'), how='outer', left_index=True, right_index=True)
 
-y = dataset.iloc[:, -1]
+final = final[[ g for g in grouped.groups.keys()]]
+print (g for g in grouped.groups.keys())
+final
 
-#Splitting Training and Test Set
-#Since we have a very small dataset, we will train our model with all availabe data.
-
-from sklearn.linear_model import LinearRegression
-regressor = LinearRegression()
-
-#Fitting model with trainig data
-regressor.fit(X, y)
 
 # Saving model to disk
-pickle.dump(regressor, open('model.pkl','wb'))
+pickle.dump(final, open('model.pkl','wb'))
 
 # Loading model to compare the results
 model = pickle.load(open('model.pkl','rb'))
