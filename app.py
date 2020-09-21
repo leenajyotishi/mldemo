@@ -2,8 +2,25 @@ import numpy as np
 from flask import Flask, request, jsonify, render_template
 import pickle
 import pandas as pd
+import matplotlib.pyplot as plt
 app = Flask(__name__)
-model = pickle.load(open('model.pkl', 'rb'))
+import seaborn as sns
+import datetime as dt
+from fbprophet import Prophet
+# Statsmodels widely known for forecasting than Prophet
+import statsmodels.api as sm
+from scipy import stats
+from plotly import tools
+import plotly.figure_factory as ff
+import plotly.tools as tls
+import plotly.graph_objs as go
+from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
+init_notebook_mode(connected=True)
+import warnings
+warnings.filterwarnings("ignore")
+
+# plt.style.available
+plt.style.use("seaborn-whitegrid")
 
 @app.route('/')
 def home():
@@ -51,7 +68,7 @@ print (g for g in grouped.groups.keys())
 final
 
 
-    return render_template('index.html', prediction_text='Product price hould be $ {}'.format(final))
+ return render_template('index.html', data=final)
 
 
 if __name__ == "__main__":
