@@ -64,4 +64,3 @@ pickle.dump(final, open('model.pkl','wb'))
 
 # Loading model to compare the results
 model = pickle.load(open('model.pkl','rb'))
-print(model.predict([[np.array(final)]]))
